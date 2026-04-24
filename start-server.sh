@@ -9,5 +9,5 @@ until redis-cli -h 127.0.0.1 ping 2>/dev/null | grep -q PONG; do
     sleep 1
 done
 
-cd /usr/src/app
-exec /bin/bash start.sh
+cd /usr/src/app/server
+exec /bin/bash bin/start.sh

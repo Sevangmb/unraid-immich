@@ -60,9 +60,9 @@ RUN PG_VER=$(ls /usr/lib/postgresql/ | sort -V | tail -1) \
 COPY --from=ml-stage /usr/src /ml/src
 
 # Venv frais + toutes les dépendances ML (liste explicite depuis pyproject.toml)
-RUN python3 -m venv /opt/venv \
- && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
- && /opt/venv/bin/pip install --no-cache-dir \
+RUN python3 -m venv /opt/venv && /opt/venv/bin/pip install --no-cache-dir --upgrade pip
+
+RUN /opt/venv/bin/pip install --no-cache-dir \
     aiocache \
     fastapi \
     gunicorn \
@@ -77,9 +77,11 @@ RUN python3 -m venv /opt/venv \
     python-multipart \
     rich \
     tokenizers \
-    "uvicorn[standard]" \
- && /opt/venv/bin/pip install --no-cache-dir "rapidocr-general-cpu" 2>/dev/null || true \
- && /opt/venv/bin/pip install --no-cache-dir "onnxruntime-gpu" 2>/dev/null \
+    "uvicorn[standard]"
+
+RUN /opt/venv/bin/pip install --no-cache-dir "rapidocr-general-cpu" || true
+
+RUN /opt/venv/bin/pip install --no-cache-dir "onnxruntime-gpu" \
  || /opt/venv/bin/pip install --no-cache-dir "onnxruntime"
 
 # ── Config supervisord ────────────────────────────────────────────────────────
