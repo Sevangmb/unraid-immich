@@ -56,17 +56,16 @@ RUN PG_VER=$(ls /usr/lib/postgresql/ | sort -V | tail -1) \
     rm -f /tmp/pgvecto.deb; \
     echo "==> pgvecto.rs terminé"
 
-# ── Étape 4 : Machine Learning — venv + code app ─────────────────────────────
-COPY --from=ml-stage /opt/venv /opt/venv
-COPY --from=ml-stage /usr/src  /ml/src
+# ── Étape 4 : Machine Learning — code source + venv frais ────────────────────
+# On copie uniquement le code source (pas le venv Python 3.11 incompatible)
+COPY --from=ml-stage /usr/src /ml/src
 
-# Assure la compatibilité python3 → venv (symlink si nécessaire)
-RUN PYBIN=$(ls /usr/bin/python3.* 2>/dev/null | sort -V | tail -1) \
- && if [ -n "$PYBIN" ]; then \
-      PYVER=$(basename "$PYBIN"); \
-      ln -sf "$PYBIN" /usr/local/bin/$PYVER 2>/dev/null || true; \
-      ln -sf "$PYBIN" /usr/local/bin/python3 2>/dev/null || true; \
-    fi
+# Crée un venv frais avec le Python système et installe les dépendances depuis le source
+RUN python3 -m venv /opt/venv \
+ && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
+ && (/opt/venv/bin/pip install --no-cache-dir "/ml/src[cuda]" 2>/dev/null \
+     || /opt/venv/bin/pip install --no-cache-dir "/ml/src") \
+ && /opt/venv/bin/pip install --no-cache-dir "onnxruntime-gpu" 2>/dev/null || true
 
 # ── Config supervisord ────────────────────────────────────────────────────────
 COPY supervisord.conf /etc/supervisor/conf.d/immich.conf

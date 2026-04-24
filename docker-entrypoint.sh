@@ -20,11 +20,13 @@ if [ ! -f "$PGDATA/PG_VERSION" ]; then
         --auth-local=trust \
         -U postgres
 
-    # Charge pgvecto.rs si installé, sinon pgvector
-    if [ -f "$(pg_config --sharedir 2>/dev/null)/extension/vectors.control" ] || \
-       ls /usr/share/postgresql/*/extension/vectors.control 2>/dev/null | head -1; then
-        echo "shared_preload_libraries = 'vectors.so'" >> "$PGDATA/postgresql.conf"
-        echo "search_path = \"\$user\", public, vectors" >> "$PGDATA/postgresql.conf"
+    # Charge pgvecto.rs uniquement si vectors.so est présent
+    if ls "/usr/lib/postgresql/$PG_VER/lib/vectors.so" 2>/dev/null; then
+        cat >> "$PGDATA/postgresql.conf" << 'PGCONF'
+shared_preload_libraries = 'vectors.so'
+search_path = "$user", public, vectors
+PGCONF
+        echo "==> pgvecto.rs activé dans postgresql.conf"
     fi
 
     echo "==> Démarrage PostgreSQL (init)..."
