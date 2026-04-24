@@ -40,6 +40,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     python3 \
     python3-venv \
+    python3-dev \
+    build-essential \
+    libgl1 \
  && rm -rf /var/lib/apt/lists/*
 
 # ── Étape 3 : pgvecto.rs (détecte la version PG installée) ───────────────────
