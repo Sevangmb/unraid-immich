@@ -24,7 +24,6 @@ if [ ! -f "$PGDATA/PG_VERSION" ]; then
     if ls "/usr/lib/postgresql/$PG_VER/lib/vectors.so" 2>/dev/null; then
         cat >> "$PGDATA/postgresql.conf" << 'PGCONF'
 shared_preload_libraries = 'vectors.so'
-search_path = "$user", public, vectors
 PGCONF
         echo "==> pgvecto.rs activé dans postgresql.conf"
     fi

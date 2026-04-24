@@ -57,15 +57,30 @@ RUN PG_VER=$(ls /usr/lib/postgresql/ | sort -V | tail -1) \
     echo "==> pgvecto.rs terminé"
 
 # ── Étape 4 : Machine Learning — code source + venv frais ────────────────────
-# On copie uniquement le code source (pas le venv Python 3.11 incompatible)
 COPY --from=ml-stage /usr/src /ml/src
 
-# Crée un venv frais avec le Python système et installe les dépendances depuis le source
+# Venv frais + toutes les dépendances ML (liste explicite depuis pyproject.toml)
 RUN python3 -m venv /opt/venv \
  && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
- && (/opt/venv/bin/pip install --no-cache-dir "/ml/src[cuda]" 2>/dev/null \
-     || /opt/venv/bin/pip install --no-cache-dir "/ml/src") \
- && /opt/venv/bin/pip install --no-cache-dir "onnxruntime-gpu" 2>/dev/null || true
+ && /opt/venv/bin/pip install --no-cache-dir \
+    aiocache \
+    fastapi \
+    gunicorn \
+    huggingface-hub \
+    insightface \
+    numpy \
+    "opencv-python-headless" \
+    orjson \
+    pillow \
+    "pydantic>=2" \
+    pydantic-settings \
+    python-multipart \
+    rich \
+    tokenizers \
+    "uvicorn[standard]" \
+ && /opt/venv/bin/pip install --no-cache-dir "rapidocr-general-cpu" 2>/dev/null || true \
+ && /opt/venv/bin/pip install --no-cache-dir "onnxruntime-gpu" 2>/dev/null \
+ || /opt/venv/bin/pip install --no-cache-dir "onnxruntime"
 
 # ── Config supervisord ────────────────────────────────────────────────────────
 COPY supervisord.conf /etc/supervisor/conf.d/immich.conf

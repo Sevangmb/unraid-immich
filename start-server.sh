@@ -10,4 +10,4 @@ until redis-cli -h 127.0.0.1 ping 2>/dev/null | grep -q PONG; do
 done
 
 cd /usr/src/app
-exec node dist/main
+exec /bin/bash start.sh
