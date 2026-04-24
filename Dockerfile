@@ -19,11 +19,14 @@ ENV DB_HOSTNAME=127.0.0.1 \
     TZ=UTC \
     NODE_ENV=production \
     NVIDIA_VISIBLE_DEVICES=all \
-    NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+    PATH="/opt/venv/bin:$PATH" \
+    PYTHONPATH=/ml/src \
+    TRANSFORMERS_CACHE=/data/model-cache
 
 USER root
 
-# ── CA certs d'abord pour éviter les erreurs SSL des repos ───────────────────
+# ── CA certs + outils de base ─────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
@@ -31,7 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     lsb-release \
  && rm -rf /var/lib/apt/lists/*
 
-# ── Repo officiel PostgreSQL (PGDG) + installation PostgreSQL 16 ──────────────
+# ── PostgreSQL 16 via PGDG ───────────────────────────────────────────────────
 RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
     | gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg \
  && echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
@@ -41,6 +44,9 @@ RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
     redis-server \
     supervisor \
     gosu \
+    python3.11 \
+    python3.11-dev \
+ && ln -sf /usr/bin/python3.11 /usr/local/bin/python3.11 \
  && rm -rf /var/lib/apt/lists/*
 
 # ── pgvecto.rs : extension PostgreSQL pour la recherche vectorielle ───────────
@@ -50,16 +56,9 @@ RUN curl -fsSL \
  && dpkg -i /tmp/pgvecto.deb \
  && rm /tmp/pgvecto.deb
 
-# ── Machine Learning : copie l'environnement Python complet ──────────────────
-COPY --from=ml-stage /usr/local/bin/python3.11       /usr/local/bin/python3.11
-COPY --from=ml-stage /usr/local/lib/python3.11       /usr/local/lib/python3.11
-COPY --from=ml-stage /usr/local/lib/libpython3.11.so.1.0 /usr/local/lib/libpython3.11.so.1.0
-COPY --from=ml-stage /usr/src/app                    /ml/app
-
-RUN ln -sf /usr/local/bin/python3.11 /usr/local/bin/python3 \
- && ln -sf /usr/local/lib/libpython3.11.so.1.0 /usr/local/lib/libpython3.11.so \
- && echo "/usr/local/lib" > /etc/ld.so.conf.d/python3.conf \
- && ldconfig
+# ── Machine Learning : venv (packages pré-compilés) + code app ───────────────
+COPY --from=ml-stage /opt/venv  /opt/venv
+COPY --from=ml-stage /usr/src   /ml/src
 
 # ── Supervisord config ────────────────────────────────────────────────────────
 COPY supervisord.conf /etc/supervisor/conf.d/immich.conf
