@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Immich</Name>
+  <Repository>sevanitito/immich-unraid</Repository>
+  <Registry>https://hub.docker.com/r/sevanitito/immich-unraid</Registry>
+  <Network>bridge</Network>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Overview>
+    Immich est une solution de sauvegarde et gestion de photos/vidéos auto-hébergée, alternative à Google Photos.&#xD;&#xA;&#xD;&#xA;Cette image embarque Immich, PostgreSQL (avec pgvecto.rs), Redis et le service Machine Learning dans un seul container — rien d'autre à installer.&#xD;&#xA;&#xD;&#xA;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xD;&#xA;  ACCÈS WEB&#xD;&#xA;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xD;&#xA;  URL : http://[IP]:2283&#xD;&#xA;  Créez votre compte admin au premier accès.&#xD;&#xA;&#xD;&#xA;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xD;&#xA;  DONNÉES (sauvegardées sur le host)&#xD;&#xA;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xD;&#xA;  /mnt/user/appdata/immich  — base de données, modèles ML, config&#xD;&#xA;  /mnt/user/photos          — vos photos et vidéos&#xD;&#xA;&#xD;&#xA;Tout est pré-configuré. Cliquez Apply pour démarrer.
+  </Overview>
+  <Category>MediaApp:Photos</Category>
+  <WebUI>http://[IP]:[PORT:2283]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/Sevangmb/unraid-immich/main/immich.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/Sevangmb/unraid-immich/main/assets/logo.png</Icon>
+  <ExtraParams>--runtime=nvidia</ExtraParams>
+  <Project>https://immich.app</Project>
+  <Support>https://github.com/Sevangmb/unraid-immich/issues</Support>
+  <GitHub>https://github.com/Sevangmb/unraid-immich</GitHub>
+  <DonateText/>
+  <DonateLink/>
+
+  <!-- ── Volumes ─────────────────────────────────────────────────────────── -->
+  <Config Name="Appdata (BDD + modèles ML)" Target="/data" Default="/mnt/user/appdata/immich" Mode="rw"
+    Description="Dossier où sont stockés la base PostgreSQL, le cache Redis et les modèles Machine Learning."
+    Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/immich</Config>
+
+  <Config Name="Photos &amp; Vidéos" Target="/photos" Default="/mnt/user/photos" Mode="rw"
+    Description="Dossier où Immich stocke les photos et vidéos importées."
+    Type="Path" Display="always" Required="true" Mask="false">/mnt/user/photos</Config>
+
+  <!-- ── Port ───────────────────────────────────────────────────────────── -->
+  <Config Name="Port — Interface Web" Target="2283" Default="2283" Mode="tcp"
+    Description="Port d'accès à l'interface Immich (navigateur + appli mobile)."
+    Type="Port" Display="always" Required="true" Mask="false">2283</Config>
+
+  <!-- ── Variables principales ──────────────────────────────────────────── -->
+  <Config Name="Fuseau horaire" Target="TZ" Default="Europe/Paris" Mode=""
+    Description="Fuseau horaire utilisé pour les métadonnées et l'interface (ex: Europe/Paris, America/New_York)."
+    Type="Variable" Display="always" Required="true" Mask="false">Europe/Paris</Config>
+
+  <Config Name="Base de données — Mot de passe" Target="DB_PASSWORD" Default="immich_db_pass" Mode=""
+    Description="Mot de passe PostgreSQL pour l'utilisateur Immich."
+    Type="Variable" Display="always" Required="true" Mask="true">immich_db_pass</Config>
+
+  <!-- ── Variables avancées ─────────────────────────────────────────────── -->
+  <Config Name="Base de données — Utilisateur" Target="DB_USERNAME" Default="immich" Mode=""
+    Description="Nom d'utilisateur PostgreSQL."
+    Type="Variable" Display="advanced" Required="false" Mask="false">immich</Config>
+
+  <Config Name="Base de données — Nom" Target="DB_DATABASE_NAME" Default="immich" Mode=""
+    Description="Nom de la base de données PostgreSQL."
+    Type="Variable" Display="advanced" Required="false" Mask="false">immich</Config>
+
+  <Config Name="Machine Learning — Activé" Target="MACHINE_LEARNING_ENABLED" Default="true" Mode=""
+    Description="Active ou désactive le service ML (reconnaissance faciale, recherche par description). Mettre false pour économiser de la RAM."
+    Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+
+  <!-- ── GPU NVIDIA ──────────────────────────────────────────────────────── -->
+  <Config Name="GPU — Devices" Target="NVIDIA_VISIBLE_DEVICES" Default="all" Mode=""
+    Description="GPU(s) exposés au container. 'all' = tous les GPU, ou l'UUID spécifique (ex: GPU-xxxxxxxx). Nécessite le plugin NVIDIA sur Unraid."
+    Type="Variable" Display="always" Required="false" Mask="false">all</Config>
+
+  <Config Name="GPU — Capabilities" Target="NVIDIA_DRIVER_CAPABILITIES" Default="compute,utility" Mode=""
+    Description="Fonctionnalités NVIDIA activées. 'compute,utility' suffit pour le Machine Learning."
+    Type="Variable" Display="advanced" Required="false" Mask="false">compute,utility</Config>
+
+  <Config Name="Log Level" Target="IMMICH_LOG_LEVEL" Default="log" Mode=""
+    Description="Verbosité des logs : verbose, debug, log, warn, error."
+    Type="Variable" Display="advanced" Required="false" Mask="false">log</Config>
+
+</Container>
