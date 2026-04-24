@@ -23,18 +23,29 @@ ENV DB_HOSTNAME=127.0.0.1 \
 
 USER root
 
-# ── Dépendances système ───────────────────────────────────────────────────────
+# ── CA certs d'abord pour éviter les erreurs SSL des repos ───────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    postgresql-15 \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+ && rm -rf /var/lib/apt/lists/*
+
+# ── Repo officiel PostgreSQL (PGDG) + installation PostgreSQL 16 ──────────────
+RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    | gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg \
+ && echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+    > /etc/apt/sources.list.d/pgdg.list \
+ && apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-16 \
     redis-server \
     supervisor \
     gosu \
-    curl \
  && rm -rf /var/lib/apt/lists/*
 
 # ── pgvecto.rs : extension PostgreSQL pour la recherche vectorielle ───────────
 RUN curl -fsSL \
-    "https://github.com/tensorchord/pgvecto.rs/releases/download/v${PGVECTO_RS_VERSION}/vectors-pg15_${PGVECTO_RS_VERSION}_amd64.deb" \
+    "https://github.com/tensorchord/pgvecto.rs/releases/download/v${PGVECTO_RS_VERSION}/vectors-pg16_${PGVECTO_RS_VERSION}_amd64.deb" \
     -o /tmp/pgvecto.deb \
  && dpkg -i /tmp/pgvecto.deb \
  && rm /tmp/pgvecto.deb

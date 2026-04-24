@@ -10,7 +10,7 @@ chown -R postgres:postgres "$PGDATA"
 # ── Init PostgreSQL si premier démarrage ──────────────────────────────────────
 if [ ! -f "$PGDATA/PG_VERSION" ]; then
     echo "==> Initialisation de PostgreSQL..."
-    gosu postgres /usr/lib/postgresql/15/bin/initdb \
+    gosu postgres /usr/lib/postgresql/16/bin/initdb \
         -D "$PGDATA" \
         --auth-host=md5 \
         --auth-local=trust \
@@ -22,7 +22,7 @@ if [ ! -f "$PGDATA/PG_VERSION" ]; then
 
     # ── Démarrage temporaire pour créer user/base/extensions ─────────────────
     echo "==> Démarrage PostgreSQL (init)..."
-    gosu postgres /usr/lib/postgresql/15/bin/pg_ctl -D "$PGDATA" -w start
+    gosu postgres /usr/lib/postgresql/16/bin/pg_ctl -D "$PGDATA" -w start
 
     gosu postgres psql -U postgres <<SQL
 DO \$\$
@@ -45,7 +45,7 @@ CREATE EXTENSION IF NOT EXISTS cube;
 CREATE EXTENSION IF NOT EXISTS earthdistance;
 SQL
 
-    gosu postgres /usr/lib/postgresql/15/bin/pg_ctl -D "$PGDATA" -w stop
+    gosu postgres /usr/lib/postgresql/16/bin/pg_ctl -D "$PGDATA" -w stop
     echo "==> Base de données initialisée."
 fi
 
