@@ -1,7 +1,7 @@
-# ── Stage 1 : Machine Learning (Python + packages CUDA) ──────────────────────
+# ── Stage 1 : Machine Learning ────────────────────────────────────────────────
 FROM ghcr.io/immich-app/immich-machine-learning:release-cuda AS ml-stage
 
-# ── Image finale : Immich Server + PostgreSQL + Redis + ML ───────────────────
+# ── Image finale : Immich Server (base Trixie) ────────────────────────────────
 FROM ghcr.io/immich-app/immich-server:release
 
 ARG PGVECTO_RS_VERSION=0.3.0
@@ -26,41 +26,49 @@ ENV DB_HOSTNAME=127.0.0.1 \
 
 USER root
 
-# ── CA certs + outils de base ─────────────────────────────────────────────────
+# ── Étape 1 : outils essentiels (ca-certs en premier pour les téléchargements) ─
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
-    gnupg \
-    lsb-release \
+    gosu \
  && rm -rf /var/lib/apt/lists/*
 
-# ── PostgreSQL 16 via PGDG ───────────────────────────────────────────────────
-RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
-    | gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg \
- && echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
-    > /etc/apt/sources.list.d/pgdg.list \
- && apt-get update && apt-get install -y --no-install-recommends \
-    postgresql-16 \
+# ── Étape 2 : PostgreSQL (version auto depuis les repos Debian) ───────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql \
     redis-server \
     supervisor \
-    gosu \
-    python3.11 \
-    python3.11-dev \
- && ln -sf /usr/bin/python3.11 /usr/local/bin/python3.11 \
+    python3 \
+    python3-venv \
  && rm -rf /var/lib/apt/lists/*
 
-# ── pgvecto.rs : extension PostgreSQL pour la recherche vectorielle ───────────
-RUN curl -fsSL \
-    "https://github.com/tensorchord/pgvecto.rs/releases/download/v${PGVECTO_RS_VERSION}/vectors-pg16_${PGVECTO_RS_VERSION}_amd64.deb" \
-    -o /tmp/pgvecto.deb \
- && dpkg -i /tmp/pgvecto.deb \
- && rm /tmp/pgvecto.deb
+# ── Étape 3 : pgvecto.rs (détecte la version PG installée) ───────────────────
+RUN PG_VER=$(ls /usr/lib/postgresql/ | sort -V | tail -1) \
+ && echo "==> PostgreSQL détecté : $PG_VER" \
+ && for PGVEC_VER in ${PGVECTO_RS_VERSION} 0.4.0 0.2.0; do \
+      URL="https://github.com/tensorchord/pgvecto.rs/releases/download/v${PGVEC_VER}/vectors-pg${PG_VER}_${PGVEC_VER}_amd64.deb"; \
+      echo "Tentative pgvecto.rs v${PGVEC_VER} pour pg${PG_VER}..."; \
+      if curl -fsSL --connect-timeout 30 "$URL" -o /tmp/pgvecto.deb 2>/dev/null; then \
+          dpkg -i /tmp/pgvecto.deb && rm -f /tmp/pgvecto.deb \
+          && echo "==> pgvecto.rs v${PGVEC_VER} installé pour pg${PG_VER}" && break; \
+      fi; \
+    done; \
+    rm -f /tmp/pgvecto.deb; \
+    echo "==> pgvecto.rs terminé"
 
-# ── Machine Learning : venv (packages pré-compilés) + code app ───────────────
-COPY --from=ml-stage /opt/venv  /opt/venv
-COPY --from=ml-stage /usr/src   /ml/src
+# ── Étape 4 : Machine Learning — venv + code app ─────────────────────────────
+COPY --from=ml-stage /opt/venv /opt/venv
+COPY --from=ml-stage /usr/src  /ml/src
 
-# ── Supervisord config ────────────────────────────────────────────────────────
+# Assure la compatibilité python3 → venv (symlink si nécessaire)
+RUN PYBIN=$(ls /usr/bin/python3.* 2>/dev/null | sort -V | tail -1) \
+ && if [ -n "$PYBIN" ]; then \
+      PYVER=$(basename "$PYBIN"); \
+      ln -sf "$PYBIN" /usr/local/bin/$PYVER 2>/dev/null || true; \
+      ln -sf "$PYBIN" /usr/local/bin/python3 2>/dev/null || true; \
+    fi
+
+# ── Config supervisord ────────────────────────────────────────────────────────
 COPY supervisord.conf /etc/supervisor/conf.d/immich.conf
 
 # ── Scripts ───────────────────────────────────────────────────────────────────
