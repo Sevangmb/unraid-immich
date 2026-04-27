@@ -52,10 +52,14 @@ RUN PG_VER=$(ls /usr/lib/postgresql/ | sort -V | tail -1) \
     done; \
     rm -f /tmp/pgvecto.deb
 
-# ── Étape 4 : Machine Learning — code + venv complet depuis l'image officielle ─
-# Le venv de l'image ML contient Python 3.11 + tous les packages (rapidocr, onnxruntime, etc.)
+# ── Étape 4 : Machine Learning — code + venv + Python 3.11 depuis l'image officielle ─
 COPY --from=ml-stage /usr/src /ml/src
 COPY --from=ml-stage /opt/venv /opt/venv
+# Python 3.11 (binaire + stdlib + lib partagée) requis par les symlinks du venv
+COPY --from=ml-stage /usr/local/bin/python3 /usr/local/bin/python3
+COPY --from=ml-stage /usr/local/lib/python3.11 /usr/local/lib/python3.11
+COPY --from=ml-stage /usr/local/lib/libpython3.11.so.1.0 /usr/local/lib/libpython3.11.so.1.0
+RUN ldconfig && ln -sf /usr/local/lib/libpython3.11.so.1.0 /usr/local/lib/libpython3.11.so
 
 # ── Config supervisord ────────────────────────────────────────────────────────
 COPY supervisord.conf /etc/supervisor/conf.d/immich.conf
