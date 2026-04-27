@@ -85,7 +85,8 @@ RUN /opt/venv/bin/pip install --no-cache-dir \
     tokenizers \
     "uvicorn[standard]"
 
-RUN /opt/venv/bin/pip install --no-cache-dir "rapidocr-general-cpu" || true
+RUN /opt/venv/bin/pip install --no-cache-dir "rapidocr-onnxruntime" || \
+    /opt/venv/bin/pip install --no-cache-dir "rapidocr-general-cpu" || true
 
 RUN /opt/venv/bin/pip install --no-cache-dir "onnxruntime-gpu" \
  || /opt/venv/bin/pip install --no-cache-dir "onnxruntime"
