@@ -65,6 +65,9 @@ COPY --from=ml-stage /usr/src /ml/src
 # Venv frais + toutes les dépendances ML (liste explicite depuis pyproject.toml)
 RUN python3 -m venv /opt/venv && /opt/venv/bin/pip install --no-cache-dir --upgrade pip
 
+# Installe le package immich-ml depuis sa source si pyproject.toml présent
+RUN cd /ml/src && /opt/venv/bin/pip install --no-cache-dir --no-deps -e . 2>/dev/null || true
+
 RUN /opt/venv/bin/pip install --no-cache-dir \
     aiocache \
     fastapi \
