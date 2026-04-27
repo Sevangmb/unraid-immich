@@ -41,7 +41,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
  && rm -rf /var/lib/apt/lists/*
 
-# ── Étape 3 : pgvecto.rs ──────────────────────────────────────────────────────
+# ── Étape 3 : pgvector (obligatoire) + pgvecto.rs (optionnel) ────────────────
+RUN PG_VER=$(ls /usr/lib/postgresql/ | sort -V | tail -1) \
+ && apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-${PG_VER}-pgvector \
+ && rm -rf /var/lib/apt/lists/* \
+ && echo "==> pgvector installé pour pg${PG_VER}"
+
 RUN PG_VER=$(ls /usr/lib/postgresql/ | sort -V | tail -1) \
  && for PGVEC_VER in ${PGVECTO_RS_VERSION} 0.4.0 0.2.0; do \
       URL="https://github.com/tensorchord/pgvecto.rs/releases/download/v${PGVEC_VER}/vectors-pg${PG_VER}_${PGVEC_VER}_amd64.deb"; \
@@ -50,7 +56,7 @@ RUN PG_VER=$(ls /usr/lib/postgresql/ | sort -V | tail -1) \
           && echo "==> pgvecto.rs v${PGVEC_VER} installé pour pg${PG_VER}" && break; \
       fi; \
     done; \
-    rm -f /tmp/pgvecto.deb
+    rm -f /tmp/pgvecto.deb; true
 
 # ── Étape 4 : Machine Learning — code + venv + Python 3.11 depuis l'image officielle ─
 COPY --from=ml-stage /usr/src /ml/src
